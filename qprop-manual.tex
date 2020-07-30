@@ -1,0 +1,34 @@
+%% Start
+\documentclass[12pt,a4paper,utf8]{ctexart}
+%% 导言区
+\input{data/preamble}
+
+%% 封面
+\input{data/cover}
+
+\begin{document}
+\maketitle
+%% 目录
+\tableofcontents
+%% 插图索引
+% \listoffigures
+% %% 表格索引
+% \listoftables
+%% 章节
+\vspace{6em}
+本文档源代码 \url{https://github.com/rachpt/qprop-manual}
+\include{data/chap01}
+\include{data/chap02}
+\include{data/chap03}
+\include{data/chap04}
+\include{data/chap05}
+%% 正文结束
+
+%% 附录
+\begin{appendix}
+    \input{data/appendix}
+\end{appendix}
+
+\end{document}
+
+\endinput

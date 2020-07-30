@@ -1,0 +1,45 @@
+% 第二章
+\section{开始使用}
+
+这里以演示 \filename{/path/to/qprop/src/example/attoclock/} 示例的运行。
+
+\begin{lstlisting}[language=bash]
+# 新建工作文件夹
+mkdir -p /path/to/qprop/jobs/test-jobs
+
+# 复制示例参数文件
+cp -r /path/to/qprop/src/example/attoclock /path/to/qprop/jobs/test-jobs
+
+# 进入参数所在文件夹
+cd /path/to/qprop/jobs/test-jobs/attoclock
+
+# 设置 QPROP 环境变量，注意使用英文双引号
+# set qprop home
+export QPROP_HOME="/path/to/qprop"
+export QPROP_DEP_DIR="$QPROP_HOME/dep"
+# other settings
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$QPROP_DEP_DIR/openmpi/lib
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$QPROP_DEP_DIR/gsl/lib
+
+## 运行
+# 第一步
+/path/to/qprop/bin/imag-prop
+
+# 待第一步结束后，运行第二步
+/path/to/qprop/bin/real-prop
+
+# 待第二步结束后，运行第三步
+"$QPROP_DEP_DIR/openmpi/bin/mpiexec" -n 8 "$QPROP_HOME/bin/eval-tsurff-mpi"
+\end{lstlisting}
+
+说明：第三步 -n 8 表示使用 8 线程并行运算。如果 \ref{use_ppp} 处设置了使用 use-ppp，那么在第二第三不之间还有一个 ppp 的并行运算。
+
+\begin{lstlisting}[language=bash]
+"$QPROP_DEP_DIR/openmpi/bin/mpiexec" -n 8 "$QPROP_HOME/bin/ppp-mpi"
+\end{lstlisting}
+
+\newpage
+% \vspace{2em}
+一个经过优化后的 命令导入文件\filename{include.sh}：
+
+\lstinputlisting[language=bash]{code/include.sh}

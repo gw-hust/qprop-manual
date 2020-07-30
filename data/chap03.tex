@@ -1,0 +1,169 @@
+% 第三章
+\section{$Qprop$ 计算参数}
+
+参数文件有一下三个：\filename{init.param}，\filename{propagate.param}，\filename{tsurff.param}。参数文件为纯文本文件，utf-8 编码，Unix 格式换行风格。
+其中使用 英文井号(\#)作为注释的开始，单行注释。
+
+\subsection{init.param}
+典型的 init 参数配置如下：
+\begin{lstlisting}[language=bash]
+nuclear-charge double 1.0
+pot-cutoff double 25.0
+delta-r double 0.2
+radial-grid-size double 100.0
+ell-grid-size long 2
+qprop-dim long 44
+initial-m long -1
+initial-ell long 1
+# control m = \pm 1
+dual-m bool 0
+# \alpha --> 势能
+effpot-alpha double 2.40694033726
+\end{lstlisting}
+
+参数意义：
+\begin{table}[htbp]
+    \begin{tabular}{c|c|l}
+    \hline
+    参数 & 一般值 & 意义 \\
+    \hline
+    nuclear-charge & 1.0 & 原子序号，用于指定计算原子 \\
+    pot-cutoff & 25.0 & 截断能大小(原子单位)，对应 $R_{co}$ \\
+    delta-r & 0.2 & 最小步长(原子单位) \\
+    radial-grid-size & 100.0 & 网格大小 \\
+    qprop-dim & 34/44 & 计算模式(34 线偏、44 圆偏) \\
+    initial-m & 0、$\pm$ 1 & 原子磁量子数 m \\
+    initial-ell & 0，1、\dots & 轨道量子数 \\
+    dual-m & 0/1 & 控制是否为混态(m = $\pm$ 1) \\
+    effpot-alpha & -- & 非氢原子 吸收势修正量，使用配套 python 脚本计算 \\
+    \hline
+    \end{tabular}
+\end{table}
+
+
+\subsection{propagate.param}
+圆偏光情况(qprop-dim = 44)：
+
+\begin{lstlisting}[language=bash]
+imag-width double 150.0
+ell-grid-size long 25
+delta-t double 0.05
+
+# laser 1  100nm  5x10^14  8oc
+max-electric-field-x-1 double 0.02669007
+omega-x-1 double 0.11390838
+num-cycles-x-1 double 8.0
+phase-pi-x-1 double 0.0
+my-delay-x-1 double 0.0
+
+max-electric-field-y-1 double 0.02669007
+omega-y-1 double 0.11390838
+num-cycles-y-1 double 8.0
+phase-pi-y-1 double 0.5*M_PI
+my-delay-y-1 double 0.0
+\end{lstlisting}
+
+-1 表示第一束激光，类似的 -2 表示第二束激光。如有需要使用线偏与圆偏混合模式，修改其中一束光的 $x$ 或者 $y$ 方向的电场强度为 0 即可。
+
+
+参数意义：
+\begin{table}[htbp]
+    \begin{tabular}{c|c|l}
+    \hline
+    参数 & 一般值 & 意义 \\
+    \hline
+    imag-width & 150.0 & 虚势不等于零的区域的宽度 \\
+    ell-grid-size & $\sqrt{2 \times 10 U_p}$ & 球谐波展开角动量最大量子数 \\
+    delta-t & delta-r/4 = 0.05 & 演化时间步长(原子单位) \\
+    max-electric-field-x-1 & 0.02669(5e14) & 第一束激光$x$方向电场最大值 \\
+    omega-y-1 & 0.1139 & 第一束激光$y$方向角频率 \\
+    num-cycles-x-1 & 8 & 第一束激光$x$方向持续光周期数量 \\
+    phase-pi-y-1 & 0.5*M\_PI & 第一束激光$y$方向 cep 值 \\
+    my-delay-y-1 & 0 & 可选参数，激光延时 \\
+    \hline
+    \end{tabular}
+\end{table}
+
+线偏光情况(qprop-dim = 34)：
+
+\begin{lstlisting}[language=bash]
+# width of the region where imaginary potential is different from zero
+imag-width double 150.0
+# maximum number of ells in the expansion of the wave function used during time propagation
+ell-grid-size long 600
+# time step for propagation; delta-r/4 is a sensible choice
+delta-t double 0.0375
+
+# maximum value of the electric field of the laser pulse
+max-electric-field double 5.3379853388e-02
+# frequency of the laser pulse
+omega double 2.2800000000e-02
+num-cycles double 6.0
+\end{lstlisting}
+
+如果需要使用多束线偏振激光，类似与圆偏光情况，使用 $omega\mbox{-}z\mbox{-}1$、$omega\mbox{-}z\mbox{-}2$ 的形式指定各光场形式。
+
+
+参数意义：
+\begin{table}[htbp]
+    \begin{tabular}{c|c|l}
+    \hline
+    参数 & 一般值 & 意义 \\
+    \hline
+    imag-width & 150.0 & 虚势不等于零的区域的宽度 \\
+    ell-grid-size & $\sqrt{2 \times 10 U_p}$ & 球谐波展开角动量最大量子数 \\
+    delta-t & delta-r/4 = 0.05 & 演化时间步长(原子单位) \\
+    max-electric-field & 0.02669(5e14) & 激光电场最大值 \\
+    omega & 0.1139(400 nm) & 激光角频率 \\
+    num-cycles & 8 & 激光持续光周期数量 \\
+    \hline
+    \end{tabular}
+\end{table}
+
+
+\subsection{tsurff.param} \label{use_ppp}
+
+
+\begin{lstlisting}[language=bash]
+# distance to the t-SURFF boundary
+# 一般取 4 * pot-cutoff，4×R_{co}
+R-tsurff double 100.0
+
+# This determines the duration of the simulation (slowest electron to reach the t-SURFF boundary).
+p-min-tsurff double 0.2
+
+# largest k value in the calculated spectrum
+k-max-surff double 0.9
+
+# number of k values for the spectrum
+num-k-surff long 500
+
+# number of angles theta (\theta \in [0:\pi])
+# N_{\theta} < 3 时，N_{\theta} = 3
+num-theta-surff long 3
+
+# number of angles phi (\phi \in [0:2\pi))
+num-phi-surff long 60
+
+# delta-k-scheme=1: equidistant k grid discretization w.r.t momentum; delta-k-scheme=2: equidistant k grid discretization w.r.t energy
+delta-k-scheme long 2
+
+# expansion-scheme=2: true expansion of the spectrum in spherical harmonics
+# expansion-scheme=1: use for small number of angles and large number of ells (no partial spectra are produced)
+expansion-scheme long 1
+
+# how many time steps are processed at a time during evaluation of the spectrum
+cache-size-t long 512
+
+# PPP configuration
+use-ppp bool 0
+\end{lstlisting}
+
+
+一般需要修改 $p\mbox{-}min\mbox{-}tsurff$、$k\mbox{-}max\mbox{-}surff$ 至合适的范围，特别是 $p\mbox{-}min\mbox{-}tsurff$，该值越大，计算量越小，$p\mbox{-}min\mbox{-}tsurff$ 贡献在计算量的分母上。
+
+$use\mbox{-}ppp$ 用于控制第二步 real-prop 的后部分外场作用结束后是否使用并行加速运算。使用 ppp 需要时注意，此时计算过程文件中得到的电离率小于实际电离率。并且在传统的三步计算过程中的第二三步之间多一个 ppp 的运行步骤。
+\\
+
+\textbf{注意:}
+\textcolor{red}{每次计算中不能修改三个参数文件，修改后需要重新重头计算。}

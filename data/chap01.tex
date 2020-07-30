@@ -1,0 +1,176 @@
+% 第一章
+\section{编译 $Qprop$}
+
+$Qprop$ 官网 \url{http://qprop.de}，提供的源代码只能每次计算是重新编译二进制软件，不能复用。\url{https://github.com/jam31118/rigged-qprop}提供的版本改善了软件的复用性，只要不涉及到修改吸收势函数、修改原子，一次编译得到的二进制文件就可以多次使用。
+
+本文以 github 上的$Qprop$版本蓝本(v2)，在已有配置中新增两个参数 \textit{my-delay}、\textit{dual-m}分别控制圆偏光中激光束的时间延迟与初始 $p$ 态是否为 $m= \pm 1$的混合情况。代码地址 \url{https://github.com/rachpt/rigged-qprop}。
+
+英文使用手册 \url{https://arxiv.org/pdf/1603.05529.pdf}.
+
+\subsection{环境搭建}
+GNU/Linux 操作系统，如果是还需要作为主力系统使用，推荐使用 \href{https://manjaro.org/download/}{Manjaro Linux}(KDE、XFCE版本)、\href{https://linuxmint.com/download.php}{linuxmint}(Cinnamon版本)；不推荐使用 Ubuntu，因为在长时间高强度的计算负载下， Ubuntu 系统的桌面环境极易出现问题；也不推荐使用 Windows 10 的 Linux 子系统(WSL)，高强度的 CPU 占用可能会让 Windows 直接挂掉。
+
+
+下面提供 Manjaro 与 Linuxmint 系统下编译 $Qprop$ 软件的详细步骤与注意事项。
+
+\begin{enumerate}
+    \item 安装操作系统。准备至少 500 GB 硬盘，容量不小于4 GB U盘，到Linux 发行版官网或者 \href{https://mirrors.tuna.tsinghua.edu.cn/}{清华大学镜像}、\href{https://mirrors.ustc.edu.cn/}{中科大镜像}站点下载系统 iso 镜像，使用 \url{https://rufus.ie/} 制作 USB 启动盘。
+    \item 完成一些基础设置，比如修改系统更新源为国内镜像站点，安装中文输入法，更新软件仓库，安装 gcc、make、git axel 等软件。
+    \item 使用 git clone 代码仓库，或者下载源代码压缩包，解压到一个特定的工作目录(以后不能修改该目录名)。
+    \item 安装 $Qprop$ 所需要的依赖库，gsl(GNU Scientific Library)，openmpi(并行计算)，boost。
+    \item 在 $Qprop$ src 目录下执行 make 命令，编译源代码，二进制文件在 bin 目录下。
+    \item 复制并进入计算配置文件夹，打开终端，按顺序依次执行二进制文件，进行计算，测试软件是否正常。
+\end{enumerate}
+
+\subsection{依赖安装}
+$Qprop$ 的依赖库是独立于系统依赖库单独存在的，需要自己编译特定版本的依赖库。
+
+特别注意与说明：
+
+2. gcc 版本可以使用 5.x (manjaro) 与 7.x (linuxmint)，根据我的测试较新的 8.x 乃至 9.x 虽然能够正常编译 $Qprop$，但是在运行 real-prop 过程时会立即报错： \ldots 核心已存储 \ldots \\
+Linuxmint 安装依赖命令：
+\begin{lstlisting}[language=bash]
+sudo apt update
+sudo apt install gcc-5 g++-5 autoconf make git wget axel htop
+# 查看版本信息
+gcc   --version
+gcc-5 --version
+\end{lstlisting}
+Manjaro 安装依赖命令：
+\begin{lstlisting}[language=bash]
+sudo pacman -Syu
+sudo pacman -S yay make git wget axel htop
+sudo yay -S gcc5
+# 查看版本信息
+gcc   --version
+gcc-5 --version
+\end{lstlisting}
+
+安装 gsl、，openmpi、boost：
+\begin{lstlisting}[language=bash]
+export QPROP_HOME=/path/to/root/directory/of/qprop
+export QPROP_DEP_DIR=/path/to/root/directory/of/qprop/dep
+# 比如我的
+export QPROP_HOME=/home/rachpt/rigged-qprop
+export QPROP_DEP_DIR=/home/rachpt/rigged-qprop/dep
+# 安装依赖库
+bash $QPROP_HOME/prereq/install.sh
+\end{lstlisting}
+
+如果因为校园网连接德国的网站慢，可能会因为超时而安装失败，这是需要修改一下下面几个文件。\\
+\filename{src/prereq/script/install-gsl.sh}
+\begin{lstlisting}
+# 第 46 行 wget 改成 axel -n 10 -4 
+cd $SRC_DOWN_DIR
+wget $SRC_URL
+if [ "$?" -ne "0" ]
+then
+# --------改成-----------
+cd $SRC_DOWN_DIR
+axel -n 10 -4 $SRC_URL
+if [ "$?" -ne "0" ]
+then
+# 说明： -n 10 表示 10 线程下载，-4 表示使用 ipv4
+\end{lstlisting}
+\filename{src/prereq/script/install-openmpi.sh}、\filename{src/prereq/script/install-boost.sh}
+\begin{lstlisting}
+cd $SRC_DOWN_DIR
+
+curl -LO "$SRC_URL"
+
+if [ "$?" -ne "0" ]
+then
+# -------改成----------
+cd $SRC_DOWN_DIR
+
+axel -n 10 -4 $SRC_URL
+
+if [ "$?" -ne "0" ]
+then
+# 说明：curl 改成 axel，并指定使用 ipv4 地址
+\end{lstlisting}
+
+
+\subsection{编译}
+切换到 \filename{src/main/} 目录，打开终端（bash），并输入下列命令，确保环境变量 $QPROP\_HOME$、$QPROP\_DEP\_DIR$ 被正确设置：
+\begin{lstlisting}[language=bash]
+export QPROP_HOME=/path/to/root/directory/of/qprop
+export QPROP_DEP_DIR=/path/to/root/directory/of/qprop/dep
+\end{lstlisting}
+
+补充 bash 编程基础：等号两边不能有空格，路径别用包含特殊字符(比如空格)的路径。
+
+\begin{lstlisting}[language=bash]
+cd /path/to/qprop/src/main
+
+# 使用 8  线程编译
+make -j 8 CXX=gcc-5
+
+\end{lstlisting}
+
+如有需要，可以修改 \filename{/path/to/qprop/src/main/makefile} 头部两行，其中 $QPROP\_BIN$ 表示编译二进制文件安装路径，在每次修改势函数后可以修改该值为新的文件夹。
+
+
+如果一切正常，没有报错，会在 \filename{/path/to/qprop/bin}（bin 与 $QPROP\_BIN$ 一致） 得到编译好的二进制文件：eval-tsurff、eval-tsurff-mpi、imag-prop、real-prop、ppp、ppp-mpi。其中有 mpi 后缀的表示是并行运算程序。主要使用 imag-prop、real-prop、ppp-mpi、eval-tsurff-mpi 这四个二进制文件程序。
+
+
+\iffalse
+bb \verb|\usepackage{amsmath}| aa
+
+\begin{lstlisting}[language=Python]
+import numpy as np
+    
+def incmatrix(genl1,genl2):
+    m = len(genl1)
+    n = len(genl2)
+    M = None #to become the incidence matrix
+    VT = np.zeros((n*m,1), int)  #dummy variable
+    # 注释 
+    #compute the bitwise xor matrix
+    M1 = bitxormatrix(genl1)
+    M2 = np.triu(bitxormatrix(genl2),1) 
+
+    for i in range(m-1):
+        for j in range(i+1, m):
+            [r,c] = np.where(M2 == M1[i,j])
+            for k in range(len(r)):
+                VT[(i)*n + r[k]] = 1;
+                VT[(i)*n + c[k]] = 1;
+                VT[(j)*n + r[k]] = 1;
+                VT[(j)*n + c[k]] = 1;
+                
+                if M is None:
+                    M = np.copy(VT)
+                else:
+                    M = np.concatenate((M, VT), 1)
+                
+                VT = np.zeros((n*m,1), int)
+    
+    return M
+\end{lstlisting}
+
+\begin{lstlisting}[language=bash]
+#!/usr/bin/env bash
+
+echo 'ok'
+\end{lstlisting}
+
+
+\begin{verbatim}
+    Text enclosed inside \texttt{verbatim} environment 
+    is printed directly 
+    and all \LaTeX{} commands are ignored.
+\end{verbatim}
+
+\begin{verbatim*}
+    Text enclosed inside \texttt{verbatim} environment 
+    is printed directly 
+    and all \LaTeX{} commands are ignored.
+\end{verbatim*}
+
+
+In the directory \verb|C:\Windows\system32| you can find a lot of Windows 
+system applications. 
+ 
+The \verb+\ldots+ command produces \ldots
+\fi
